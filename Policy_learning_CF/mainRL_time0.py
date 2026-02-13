@@ -1,11 +1,4 @@
-#!/usr/bin/env python3
-"""
-Time Series Counterfactual Explanation with Reinforcement Learning
-Main script for training and evaluating CFRL on UCR time series datasets.
 
-Usage: python mainRL_time0.py --dataset <dataset_name>
-Environment: tf_gpu
-"""
 import csv
 from datetime import datetime
 import time
@@ -31,8 +24,8 @@ except ImportError:
     exit(1)
 
 from alibi.explainers import CounterfactualRL
-from alibi.explainers.cfrl_base import Callback
-from alibi.models.tensorflow.cfrl_models import TimeEncoder, TimeDecoder, TimeSeriesClassifier
+from alibi.explainers.CFPL_base import Callback
+from alibi.models.tensorflow.CFPL_models import TimeEncoder, TimeDecoder, TimeSeriesClassifier
 import utils  # added to allow overriding utils.DEFAULT_OUTPUT_DIR at runtime
 
 # =============================================================================
@@ -47,7 +40,7 @@ EPOCHS_AE = 1500
 BATCH_SIZE_AE = 128
 
 
-# CFRL constants
+# CFPL constants
 COEFF_SPARSITY = 1
 COEFF_CONSISTENCY = 0
 TRAIN_STEPS = 50000
@@ -394,9 +387,9 @@ def main():
         "Plane": 16,
     }
 
-    CFRL_BATCH_SIZE = DATASET_BATCH_SIZES.get(args.dataset)
-    BATCH_SIZE_AE = CFRL_BATCH_SIZE
-    BATCH_SIZE = CFRL_BATCH_SIZE
+    CFPL_BATCH_SIZE = DATASET_BATCH_SIZES.get(args.dataset)
+    BATCH_SIZE_AE = CFPL_BATCH_SIZE
+    BATCH_SIZE = CFPL_BATCH_SIZE
 
     X_train, Y_train, X_test, Y_test = readUCR(args.dataset)
     X_train, Y_train, X_test, Y_test, onehot_encoder = prepare_data(X_train, Y_train, X_test, Y_test)
@@ -418,7 +411,7 @@ def main():
 
     # Initialize wandb
     wandb.login(key="xxx")
-    run_name = f"CFRL_{args.dataset}" + ("_no_replay" if args.no_replay else "")
+    run_name = f"CFPL_{args.dataset}" + ("_no_replay" if args.no_replay else "")
     wandb.init(project=WANDB_PROJECT, entity="xxx", name=run_name)
 
     # Create datasets
@@ -462,7 +455,7 @@ def main():
     print(f"Are they different? {np.all(Y_m_train != Y_t_int_train)}")
 
     # Define explainer with callbacks
-    print("Setting up CFRL explainer...")
+    print("Setting up CFPL explainer...")
     callbacks = [
         RewardCallback(),
         ImprovedTimeSeriesCallback(num_classes),
@@ -478,14 +471,14 @@ def main():
         coeff_sparsity=COEFF_SPARSITY,
         coeff_consistency=COEFF_CONSISTENCY,
         train_steps=TRAIN_STEPS,
-        batch_size=CFRL_BATCH_SIZE,
+        batch_size=CFPL_BATCH_SIZE,
         backend="tensorflow",
         callbacks=callbacks,
         use_replay=(not args.no_replay),
     )
 
     # Validate batch size
-    assert X_train.shape[0] >= CFRL_BATCH_SIZE, "Batch size must not exceed number of samples in X_train."
+    assert X_train.shape[0] >= CFPL_BATCH_SIZE, "Batch size must not exceed number of samples in X_train."
 
     # Fit explainer with timing
     print("Fitting explainer with training targets...")
